@@ -1,34 +1,39 @@
-import sys
+import argparse
 from launchpadlib.launchpad import Launchpad
 
+parser = argparse.ArgumentParser(
+    description='The Launchpad Bug Tracker: '
+                'This script can be used to track bugs registered in'
+                'launchpad.net.')
 
-def parse_args(args):
-    project = args[1].lower()
-    created = args[2]
-    try:
-        before = args[3]
-    except Exception:
-        before = None
 
-    return {
-        'project': project,
-        'created': created,
-        'before': before
-    }
-
+parser.add_argument('--project_name', metavar='<project_name>',
+                    dest='project_name', required=True,
+                    help='Project to Track')
+parser.add_argument('--after', metavar='<created_since>',
+                    dest='created_since', required=True,
+                    help='To track bugs registered after ...',)
+parser.add_argument('--before', metavar='<created_before>',
+                    dest='created_before',
+                    help='To track bugs registered before ...')
+parser.add_argument('--before', metavar='<created_before>',
+                    dest='created_before',
+                    help='To track bugs registered before ...')
+parser.add_argument('--detail', action='store_true', default=False,
+                    help='Show detailed results.')
 
 if __name__ == "__main__":
-    vals = parse_args(sys.argv)
+    parsed_args = parser.parse_args()
     cachedir = '/opt/.launchpadlib/cache'
     launchpad = Launchpad.login_anonymously(
         'Bug-tracker', 'production', cachedir, version='devel')
 
-    project = launchpad.projects[vals['project']]
+    project = launchpad.projects[parsed_args.project_name.lower()]
     bugs = project.searchTasks(status=['New', 'Triaged', 'Confirmed',
                                        'In Progress', 'Fix Committed',
                                        'Fix Released'],
-                               created_since=vals['created'],
-                               created_before=vals['before'],)
+                               created_since=parsed_args.created_since,
+                               created_before=parsed_args.created_before,)
     importance = {'Critical': 0,
                   'High': 0,
                   'Medium': 0,
@@ -47,13 +52,13 @@ if __name__ == "__main__":
         importance[bug.importance] += 1
         status_dict[bug.status] += 1
 
-    start = vals['created']
-    if vals['before']:
-        end = vals['before']
+    start = parsed_args.created_since
+    if parsed_args.created_before:
+        end = parsed_args.created_before
     else:
         end = 'Current'
     print '\n======================================='
-    print 'Project:   ' + vals['project'].capitalize()
+    print 'Project:   ' + parsed_args.project_name.capitalize()
     print '---------------------------------------'
     print 'Start from ' + start + ' to ' + end
     print '---------------------------------------'
@@ -75,3 +80,8 @@ if __name__ == "__main__":
     print 'Fix Committed:  ' + str(status_dict['Fix Committed'])
     print 'Fix Released:   ' + str(status_dict['Fix Released'])
     print '========================================\n'
+    if parsed_args.detail:
+        print 'Bug Details:'
+        for bug in bugs:
+            print bug.web_link + '    ' + bug.importance + '    ' + bug.status
+
