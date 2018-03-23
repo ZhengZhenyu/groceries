@@ -63,7 +63,7 @@ if __name__ == "__main__":
     else:
         end = 'Current'
     print '\n======================================='
-    print 'Project:   ' + parsed_args.project_name.capitalize()
+    print 'Project:   ' + project.display_name
     print '---------------------------------------'
     print 'Start from ' + start + ' to ' + end
     print '---------------------------------------'
