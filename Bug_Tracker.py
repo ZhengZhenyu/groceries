@@ -16,24 +16,29 @@ parser.add_argument('--after', metavar='<created_since>',
 parser.add_argument('--before', metavar='<created_before>',
                     dest='created_before',
                     help='To track bugs registered before ...')
-parser.add_argument('--before', metavar='<created_before>',
-                    dest='created_before',
-                    help='To track bugs registered before ...')
+parser.add_argument('--tags', metavar='<tags>', dest='tags',
+                    help='Comma separated strings for tags to search. '
+                         'To exclude, prepend a `-`, e.g. `-unwanted_tag`,'
+                         '`wanted_tag`. The tags are working in `or` '
+                         'mechanism: a,b => a or b.')
 parser.add_argument('--detail', action='store_true', default=False,
                     help='Show detailed results.')
+
 
 if __name__ == "__main__":
     parsed_args = parser.parse_args()
     cachedir = '/opt/.launchpadlib/cache'
     launchpad = Launchpad.login_anonymously(
         'Bug-tracker', 'production', cachedir, version='devel')
-
+    if parsed_args.tags:
+        tags = parsed_args.tags.split(',')
     project = launchpad.projects[parsed_args.project_name.lower()]
     bugs = project.searchTasks(status=['New', 'Triaged', 'Confirmed',
                                        'In Progress', 'Fix Committed',
                                        'Fix Released'],
                                created_since=parsed_args.created_since,
-                               created_before=parsed_args.created_before,)
+                               created_before=parsed_args.created_before,
+                               tags=tags)
     importance = {'Critical': 0,
                   'High': 0,
                   'Medium': 0,
@@ -62,6 +67,11 @@ if __name__ == "__main__":
     print '---------------------------------------'
     print 'Start from ' + start + ' to ' + end
     print '---------------------------------------'
+    if parsed_args.tags:
+        print 'Results are filtered with tags:'
+        for tag in tags:
+            print tag
+        '---------------------------------------'
     print 'Total Bugs:     ' + str(len(bugs))
     print '---------------------------------------'
     print 'Importance:     '
@@ -84,4 +94,3 @@ if __name__ == "__main__":
         print 'Bug Details:'
         for bug in bugs:
             print bug.web_link + '    ' + bug.importance + '    ' + bug.status
-
