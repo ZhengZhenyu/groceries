@@ -1,3 +1,4 @@
+import argparse
 import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -29,7 +30,24 @@ from neutron.tests import tools
 from neutron.db import models_v2
 from neutron_lib import context as neutron_context
 
-nova_database_connect = 'mysql+pymysql://root:root@127.0.0.1/nova_cell0?charset=utf8'
+parser = argparse.ArgumentParser(
+    description='The Launchpad Bug Tracker: '
+                'This script can be used to track bugs registered in'
+                'launchpad.net.')
+
+
+parser.add_argument('--project_id', metavar='<project_id>',
+                    dest='project_id', required=True,
+                    help='Project ID')
+parser.add_argument('--user_id', metavar='<user_id>',
+                    dest='user_id', required=True,
+                    help='User ID')
+parser.add_argument('--db_conn', metavar='<db_conn>',
+                    dest='db_conn', required=True,
+                    help='DB Connection')
+
+
+#nova_database_connect = 'mysql+pymysql://root:root@127.0.0.1/nova_cell0?charset=utf8'
 neutron_database_connect = 'mysql+pymysql://root:root@127.0.0.1/neutron?charset=utf8'
 
 
@@ -53,12 +71,12 @@ def _get_fake_cache(ip=None):
     return jsonutils.dumps(info)
 
 
-def get_instances_with_cached_ips():
+def get_instances_with_cached_ips(project_id='fake', user_id='fake'):
     """Kludge the cache into instance(s) without having to create DB
     entries
     """
-    user_id = 'fake'
-    project_id = 'fake'
+    user_id = user_id
+    project_id = project_id
     no_context = nova_context.RequestContext(
         user_id, project_id, is_admin=True)
     ne_context = neutron_context.Context(user_id, project_id, is_admin=True)
@@ -275,11 +293,12 @@ def write_neutron_db(Session, port):
 
 
 if __name__ == "__main__":
-    nova_engine = create_engine(nova_database_connect)
+    parsed_args = parser.parse_args()
+    nova_engine = create_engine(parsed_args.db_conn)
     NovaSession = sessionmaker(bind=nova_engine)
     neutron_engine = create_engine(neutron_database_connect)
     NeutronSession = sessionmaker(bind=neutron_engine)
-    instance_objs, port_objs = get_instances_with_cached_ips()
+    instance_objs, port_objs = get_instances_with_cached_ips(parsed_args.project_id, parsed_args.user_id)
     for instance in instance_objs:
         write_nova_db(NovaSession, instance)
     for port in port_objs:
