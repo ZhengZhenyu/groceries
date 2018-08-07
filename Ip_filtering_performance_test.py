@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from oslo_config import cfg
 from oslo_serialization import jsonutils
+from oslo_utils import timeutils
 from oslo_utils import uuidutils
 
 from nova.tests.unit.objects import test_instance_info_cache
@@ -101,7 +102,7 @@ def get_instances_with_cached_ips(project_id='fake', user_id='fake'):
             ip = ip_str + str(i)
             name_str = 'perfomance_test_' + str(i)
             updates = {'id': i + 254 * j, 'name': name_str}
-            instance = fake_instance_obj(no_context, **updates)
+            instance = fake_instance_obj(no_context, {'project_id' = project_id, 'user_id' = user_id})
             _info_cache_for(instance, ip)
             instances.append(instance)
             port = _create_port(ne_context, instance.uuid, ip_address=ip)
@@ -163,10 +164,10 @@ def fake_db_instance(**updates):
         'id': updates['id'],
         'deleted': False,
         'uuid': uuidutils.generate_uuid(),
-        'user_id': 'fake-user',
-        'project_id': 'fake-project',
+        'user_id': updates['user_id'],
+        'project_id': updates['project_id'],
         'host': 'fake-host',
-        'created_at': datetime.datetime(1955, 11, 5),
+        'created_at': timeutils.utcnow(),
         'pci_devices': [],
         'security_groups': [],
         'metadata': {},
@@ -220,7 +221,7 @@ def fake_db_secgroups(instance, names):
              'project_id': instance['project_id'],
              'deleted': False,
              'deleted_at': None,
-             'created_at': None,
+             'created_at': timeutils.utcnow(),
              'updated_at': None,
              })
     return secgroups
@@ -237,7 +238,7 @@ def _create_port(context, device_id, ip_address):
         'network_id': network_id,
         'fixed_ips': [ip_allocation]
     }
-    attrs = {'project_id': 'fake',
+    attrs = {'project_id': context.project_id,
              'admin_state_up': True,
              'status': 'ACTIVE',
              'device_id': device_id,
