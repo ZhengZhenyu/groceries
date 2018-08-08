@@ -126,13 +126,13 @@ def get_instances_with_cached_ips(project_id='fake', user_id='fake'):
 
     runtime = int(parsed_args.runtime)
 
-    for i in xrange(0, runtime):
+    for m in xrange(0, runtime):
         for j in xrange(0 + tradeoff, 4 + tradeoff):
             ip_str = '192.168.' + str(j) + '.'
             for i in xrange(1, 251):
                 ip = ip_str + str(i)
                 name_str = 'perfomance_test_' + str(i)
-                updates = {'id': i + 250 * j, 'name': name_str,
+                updates = {'id': i + 250 * j * m, 'name': name_str,
                            'project_id': project_id, 'user_id': user_id}
                 instance = fake_instance_obj(no_context, **updates)
                 _info_cache_for(instance, ip)
