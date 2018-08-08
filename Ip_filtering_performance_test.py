@@ -31,6 +31,20 @@ from neutron.tests import tools
 from neutron.db import models_v2
 from neutron_lib import context as neutron_context
 
+# This is a script used to generate nova instance DB records, each
+# run will generate 1000 instance records. User can use `--project_id`
+# and `--user_id` to specify user context, use `--db_conn` to specify
+# which DB you want these records in, as this will be used in Cells V2
+# deployment, use ``--cell_id`` to specify the cell id, this will be
+# used to generate ``instance_mappings`` records correctly. Finally
+# use ``--trade_off`` to specify the first instance id of this run
+# the number will be ``trade_off * 4 + 1``. Finally, use ``runtime``
+# to specify how many times you want this script to run, each runtime
+# will provide 1000 records.
+# Example usage:
+# python generate_instances.py --project_id fake1 --user_id fake2 --db_conn mysql+pymysql://root:root@127.0.0.1/nova_cell2?charset=utf8 --cell_id 3 --trade_off 1 --runtime 5
+
+
 parser = argparse.ArgumentParser(
     description='The Launchpad Bug Tracker: '
                 'This script can be used to track bugs registered in'
@@ -192,6 +206,7 @@ def fake_db_instance(**updates):
         'system_metadata': {},
         'root_gb': 0,
         'ephemeral_gb': 0,
+        'vm_state': 'ACTIVE',
         'extra': {'pci_requests': None,
                   'flavor': flavorinfo,
                   'numa_topology': None,
