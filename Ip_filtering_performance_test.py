@@ -206,7 +206,7 @@ def fake_db_instance(**updates):
         'system_metadata': {},
         'root_gb': 0,
         'ephemeral_gb': 0,
-        'vm_state': 'ACTIVE',
+        'vm_state': 'active',
         'extra': {'pci_requests': None,
                   'flavor': flavorinfo,
                   'numa_topology': None,
