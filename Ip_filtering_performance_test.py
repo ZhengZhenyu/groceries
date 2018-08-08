@@ -126,7 +126,7 @@ def get_instances_with_cached_ips(project_id='fake', user_id='fake'):
 
     runtime = int(parsed_args.runtime)
 
-    for i in xrange(1, runtime):
+    for i in xrange(0, runtime):
         for j in xrange(0 + tradeoff, 4 + tradeoff):
             ip_str = '192.168.' + str(j) + '.'
             for i in xrange(1, 251):
