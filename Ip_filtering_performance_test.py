@@ -129,7 +129,7 @@ def get_instances_with_cached_ips(project_id='fake', user_id='fake'):
     for i in xrange(1, runtime):
         for j in xrange(0 + tradeoff, 4 + tradeoff):
             ip_str = '192.168.' + str(j) + '.'
-            for i in xrange(1, 250):
+            for i in xrange(1, 251):
                 ip = ip_str + str(i)
                 name_str = 'perfomance_test_' + str(i)
                 updates = {'id': i + 250 * j, 'name': name_str,
