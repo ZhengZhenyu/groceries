@@ -1,5 +1,4 @@
 import argparse
-import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -13,6 +12,7 @@ from nova.objects import base as obj_base
 from nova import objects
 from nova.objects import fields
 from nova import context as nova_context
+from nova.db.sqlalchemy import api_models
 from nova.db.sqlalchemy import models
 
 cfg.CONF.unregister_opts([cfg.HostAddressOpt('host'),
@@ -46,9 +46,21 @@ parser.add_argument('--user_id', metavar='<user_id>',
 parser.add_argument('--db_conn', metavar='<db_conn>',
                     dest='db_conn', required=True,
                     help='DB Connection')
+parser.add_argument('--cell_id', metavar='<cell_id>',
+                    dest='cell_id', required=True,
+                    help='Cell ID')
+parser.add_argument('--trade_off', metavar='<trade_off>',
+                    dest='trade_off', required=True,
+                    help='Trade off prefix',
+                    default='0')
+parser.add_argument('--runtime', metavar='<runtime>',
+                    dest='runtime', required=True,
+                    help='runtime',
+                    default='1')
 
 
 #nova_database_connect = 'mysql+pymysql://root:root@127.0.0.1/nova_cell0?charset=utf8'
+api_database_connect = 'mysql+pymysql://root:root@127.0.0.1/nova_api?charset=utf8'
 neutron_database_connect = 'mysql+pymysql://root:root@127.0.0.1/neutron?charset=utf8'
 
 
@@ -96,17 +108,23 @@ def get_instances_with_cached_ips(project_id='fake', user_id='fake'):
     instances = []
     ports = []
 
-    for j in xrange(1, 8):
-        ip_str = '192.168.' + str(j) + '.'
-        for i in xrange(1, 255):
-            ip = ip_str + str(i)
-            name_str = 'perfomance_test_' + str(i)
-            updates = {'id': i + 254 * j, 'name': name_str}
-            instance = fake_instance_obj(no_context, {'project_id' = project_id, 'user_id' = user_id})
-            _info_cache_for(instance, ip)
-            instances.append(instance)
-            port = _create_port(ne_context, instance.uuid, ip_address=ip)
-            ports.append(port)
+    tradeoff = int(parsed_args.trade_off) * 4
+
+    runtime = int(parsed_args.runtime)
+
+    for i in xrange(1, runtime):
+        for j in xrange(0 + tradeoff, 4 + tradeoff):
+            ip_str = '192.168.' + str(j) + '.'
+            for i in xrange(1, 250):
+                ip = ip_str + str(i)
+                name_str = 'perfomance_test_' + str(i)
+                updates = {'id': i + 250 * j, 'name': name_str,
+                           'project_id': project_id, 'user_id': user_id}
+                instance = fake_instance_obj(no_context, **updates)
+                _info_cache_for(instance, ip)
+                instances.append(instance)
+                port = _create_port(ne_context, instance.uuid, ip_address=ip)
+                ports.append(port)
 
     return instances, ports
 
@@ -161,7 +179,7 @@ def fake_db_instance(**updates):
     else:
         flavorinfo = None
     db_instance = {
-        'id': updates['id'],
+        #'id': updates['id'],
         'deleted': False,
         'uuid': uuidutils.generate_uuid(),
         'user_id': updates['user_id'],
@@ -248,6 +266,7 @@ def _create_port(context, device_id, ip_address):
     port = ports.Port(context, **attrs)
     return port
 
+
 def write_nova_db(Session, inst_obj):
     session = Session()
     values = dict(inst_obj)
@@ -279,6 +298,18 @@ def write_nova_db(Session, inst_obj):
     session.close()
 
 
+def write_api_db(Session, inst_obj, cell_id):
+    session = Session()
+    mapping_model = api_models.InstanceMapping
+    mapping_ref = mapping_model()
+    mapping_ref.instance_uuid = inst_obj.uuid
+    mapping_ref.cell_id = cell_id
+    mapping_ref.project_id = instance.project_id
+    session.add(mapping_ref)
+    session.commit()
+    session.close()
+
+
 def write_neutron_db(Session, port):
     session = Session()
     port_ref = models_v2.Port()
@@ -297,10 +328,13 @@ if __name__ == "__main__":
     parsed_args = parser.parse_args()
     nova_engine = create_engine(parsed_args.db_conn)
     NovaSession = sessionmaker(bind=nova_engine)
+    api_engine = create_engine(api_database_connect)
+    APISession = sessionmaker(bind=api_engine)
     neutron_engine = create_engine(neutron_database_connect)
     NeutronSession = sessionmaker(bind=neutron_engine)
     instance_objs, port_objs = get_instances_with_cached_ips(parsed_args.project_id, parsed_args.user_id)
     for instance in instance_objs:
         write_nova_db(NovaSession, instance)
-    for port in port_objs:
-        write_neutron_db(NeutronSession, port)
+        write_api_db(APISession, instance, parsed_args.cell_id)
+    #for port in port_objs:
+    #    write_neutron_db(NeutronSession, port)
