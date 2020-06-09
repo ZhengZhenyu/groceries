@@ -81,13 +81,11 @@ if __name__ == "__main__":
         qfile_list = qfile_list[:-1]
         cmd2 = cmd2 + qfile_list
         cmd = cmd1 + " && " + cmd2
-        #os.system(cmd)
-        print(cmd)
+        os.system(cmd)
         time.sleep(5)
         post_cmd1 = 'mv ' + test_dir + '/itests/qtest/target/surefire-reports/TEST-org.apache.hadoop.hive.cli.TestMiniLlapLocalCliDriver.xml '
         post_cmd2 = 'mv ' + test_dir + '/itests/qtest/target/surefire-reports/TEST-org.apache.hadoop.hive.cli.TestMiniLlapLocalCliDriver.xml-' + str(i)
-        print(post_cmd1 + post_cmd2)
-        #os.system(post_cmd1 + post_cmd2)
+        os.system(post_cmd1 + post_cmd2)
         time.sleep(5)
     
 
